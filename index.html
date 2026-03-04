@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mtel Design Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #FFC51A; border-radius: 10px; }
+        body { color: #111827; font-family: 'Inter', sans-serif; }
+        .card-hover:hover { transform: translateY(-4px); border-color: #FFC51A; }
+        .quill-content a { color: #111827; text-decoration: underline; font-weight: 600; }
+        .quill-content ul { list-style-type: disc; margin-left: 1.25rem; margin-bottom: 1rem; }
+    </style>
+</head>
+<body class="bg-white min-h-screen">
+
+    <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100 py-4">
+        <div class="max-w-6xl mx-auto px-6 flex items-center">
+            <img src="/images/logo.svg" alt="Mtel Logo" class="h-10 w-auto object-contain">
+            <div class="h-8 w-[2px] bg-slate-200 mx-4"></div>
+            <h1 class="text-xl font-black tracking-tight uppercase">Design Hub</h1>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-6 py-12">
+        <div class="mb-8 text-center">
+            <h2 class="text-4xl font-extrabold mb-6">What are you looking for?</h2>
+            <div class="relative max-w-2xl mx-auto">
+                <i data-lucide="search" class="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5"></i>
+                <input type="text" id="searchInput" 
+                    placeholder="Search features..." 
+                    class="w-full pl-14 pr-6 py-5 rounded-2xl border-2 border-slate-100 focus:border-[#FFC51A] focus:ring-4 focus:ring-[#FFC51A]/10 focus:outline-none shadow-xl shadow-slate-100 transition-all text-lg">
+            </div>
+        </div>
+
+        <div class="flex flex-wrap justify-center gap-3 mb-12" id="filterBar">
+            <button onclick="filterByProject('All', this)" class="filter-btn active-filter px-6 py-2 rounded-full text-sm font-bold border-2 border-[#111827] bg-[#111827] text-white transition-all">
+                All Projects
+            </button>
+            <button onclick="filterByProject('Mtel Internal Tasks', this)" class="filter-btn px-6 py-2 rounded-full text-sm font-bold border-2 border-slate-100 text-[#111827] hover:border-[#FFC51A] transition-all">
+                Mtel Internal
+            </button>
+            <button onclick="filterByProject('One Bangkok', this)" class="filter-btn px-6 py-2 rounded-full text-sm font-bold border-2 border-slate-100 text-[#111827] hover:border-[#FFC51A] transition-all">
+                One Bangkok
+            </button>
+            <button onclick="filterByProject('Bangkok Cable', this)" class="filter-btn px-6 py-2 rounded-full text-sm font-bold border-2 border-slate-100 text-[#111827] hover:border-[#FFC51A] transition-all">
+                Bangkok Cable
+            </button>
+            <button onclick="filterByProject('Beatsquares', this)" class="filter-btn px-6 py-2 rounded-full text-sm font-bold border-2 border-slate-100 text-[#111827] hover:border-[#FFC51A] transition-all">
+                Beatsquares
+            </button>
+            <button onclick="filterByProject('Cryptomind', this)" class="filter-btn px-6 py-2 rounded-full text-sm font-bold border-2 border-slate-100 text-[#111827] hover:border-[#FFC51A] transition-all">
+                Cryptomind
+            </button>
+        </div>
+
+        <div class="bg-white border border-slate-100 rounded-3xl shadow-xl overflow-hidden">
+            <table class="w-full text-left border-collapse">
+                <thead class="bg-slate-50/50 border-b border-slate-100">
+                    <tr>
+                        <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Project</th>
+                        <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Feature / Task</th>
+                        <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 hidden md:table-cell">Brief Overview</th>
+                        <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="projectTableBody" class="divide-y divide-slate-50">
+                    </tbody>
+            </table>
+            
+            <div id="emptyState" class="hidden py-20 text-center">
+                <p class="text-slate-400 font-medium">No matching records found.</p>
+            </div>
+        </div>
+    </main>
+
+    <div id="projectModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-2xl max-h-[90vh] rounded-3xl shadow-2xl overflow-y-auto relative">
+            <button onclick="closeModal()" class="absolute top-6 right-6 p-2 hover:bg-slate-100 rounded-full transition-all">
+                <i data-lucide="x" class="w-6 h-6 text-slate-400"></i>
+            </button>
+
+            <div id="modalContent" class="p-8 md:p-12">
+                </div>
+        </div>
+    </div>
+
+    <script>
+        let allProjects = [];
+
+        async function init() {
+            // Force icons to draw for the header and search bar immediately
+            lucide.createIcons(); 
+
+            try {
+                const response = await fetch('/data.json');
+                allProjects = await response.json();
+                renderGrid(allProjects);
+            } catch (error) {
+                console.error("Data error:", error);
+            }
+        }
+
+        // 3. The "Render Engine"
+        function renderGrid(projects) {
+            const tableBody = document.getElementById('projectTableBody');
+            const emptyState = document.getElementById('emptyState');
+            
+            if (projects.length === 0) {
+                tableBody.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            tableBody.innerHTML = projects.map((p) => {
+                const projectID = btoa(p.projectName + p.featureTitle);
+                
+                return `
+                    <tr onclick="openModal('${projectID}')" class="group hover:bg-slate-50/80 cursor-pointer transition-colors">
+                        <td class="px-6 py-4">
+                            <span class="text-[10px] font-black uppercase tracking-widest bg-[#FFC51A]/10 text-[#111827] px-2 py-1 rounded-md border border-[#FFC51A]/20">
+                                ${p.projectName}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm font-bold text-[#111827] group-hover:text-[#FFC51A] transition-colors">
+                                ${p.featureTitle}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 hidden md:table-cell">
+                            <div class="text-xs text-slate-500 line-clamp-1 max-w-md">
+                                ${p.description.replace(/<[^>]*>/g, '')}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <button class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-400 group-hover:bg-[#FFC51A] group-hover:text-[#111827] transition-all">
+                                <i data-lucide="maximize-2" class="w-4 h-4"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            
+            lucide.createIcons();
+        }
+        
+        function filterByProject(name, btn) {
+            document.querySelectorAll('.filter-btn').forEach(b => {
+                b.classList.remove('bg-[#111827]', 'text-white', 'border-[#111827]');
+                b.classList.add('border-slate-100', 'text-[#111827]');
+            });
+            btn.classList.add('bg-[#111827]', 'text-white', 'border-[#111827]');
+            renderGrid(name === 'All' ? allProjects : allProjects.filter(p => p.projectName === name));
+        }
+
+        function openModal(id) {
+            // Find the project in the master list that matches the generated ID
+            const project = allProjects.find(p => btoa(p.projectName + p.featureTitle) === id);
+            
+            if (!project) return;
+
+            const modal = document.getElementById('projectModal');
+            const content = document.getElementById('modalContent');
+
+            content.innerHTML = `
+                <div class="mb-8">
+                    <span class="text-xs font-black uppercase tracking-widest bg-[#FFC51A] text-[#111827] px-4 py-1.5 rounded-lg mb-4 inline-block">
+                        ${project.projectName}
+                    </span>
+                    <h2 class="text-4xl font-black leading-tight text-[#111827]">${project.featureTitle}</h2>
+                </div>
+                
+                <div class="mb-8">
+                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Overview</h4>
+                    <div class="quill-content text-slate-600 leading-relaxed text-lg">
+                        ${project.description}
+                    </div>
+                </div>
+                
+                ${project.note ? `
+                    <div class="bg-slate-50 rounded-2xl p-6 mb-8 border-l-8 border-[#FFC51A]">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase block mb-2">Internal Note</span>
+                        <p class="text-sm font-medium italic text-[#111827] leading-relaxed">${project.note}</p>
+                    </div>
+                ` : ''}
+
+                <div class="pt-8 border-t border-slate-100">
+                    <span class="text-xs font-bold text-slate-400 uppercase block mb-4">Resources & Links</span>
+                    <div class="quill-content font-semibold text-[#111827]">
+                        ${project.links}
+                    </div>
+                </div>
+            `;
+
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden'; 
+            lucide.createIcons();
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('projectModal');
+            modal.classList.add('hidden');
+            document.body.style.overflow = 'auto'; // Re-enable scrolling
+        }
+
+        // Close modal if clicking outside the white box
+        window.onclick = function(event) {
+            const modal = document.getElementById('projectModal');
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
+
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            renderGrid(allProjects.filter(p => 
+                p.featureTitle.toLowerCase().includes(term) || 
+                p.description.toLowerCase().includes(term) ||
+                p.projectName.toLowerCase().includes(term)
+            ));
+        });
+
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

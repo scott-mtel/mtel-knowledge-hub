@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Create Entry</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-slate-50 py-12 px-4">
+    <div class="max-w-3xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-200">
+        <div class="bg-[#111827] p-8 text-white">
+            <h1 class="text-2xl font-black flex items-center gap-3">
+                <i data-lucide="database" class="text-[#FFC51A]"></i>
+                Add New Project Record
+            </h1>
+        </div>
+
+        <form id="adminForm" class="p-8 space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Project Name</label>
+                    <select name="projectName" class="w-full p-3 rounded-xl border border-slate-200 focus:border-[#FFC51A] outline-none bg-slate-50 cursor-pointer" required>
+                        <option value="" disabled selected>Select project...</option>
+                        <option value="Mtel Internal Tasks">Mtel Internal Tasks</option>
+                        <option value="One Bangkok">One Bangkok</option>
+                        <option value="Bangkok Cable">Bangkok Cable</option>
+                        <option value="Beatsquares">Beatsquares</option>
+                        <option value="Cryptomind">Cryptomind</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Feature / Task Title</label>
+                    <input name="featureTitle" placeholder="e.g. Mobile Nav Redesign" class="w-full p-3 rounded-xl border border-slate-200 focus:border-[#FFC51A] outline-none bg-slate-50" required>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Detailed Overview</label>
+                <div id="descEditor" class="bg-white rounded-xl" style="height: 200px;"></div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Links & Resources</label>
+                <div id="linksEditor" class="bg-white rounded-xl" style="height: 120px;"></div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Short Note (Optional)</label>
+                <input name="note" placeholder="Extra context..." class="w-full p-3 rounded-xl border border-slate-200 focus:border-[#FFC51A] outline-none bg-slate-50">
+            </div>
+
+            <div class="pt-6 border-t border-slate-100 flex flex-col gap-4">
+                <div class="flex items-center gap-4 bg-amber-50 p-4 rounded-xl border border-amber-100">
+                    <i data-lucide="shield-check" class="text-amber-600"></i>
+                    <input type="password" name="secret" placeholder="Admin Secret Phrase" class="bg-transparent border-none outline-none flex-grow font-bold text-amber-900 placeholder-amber-300" required>
+                </div>
+                
+                <button type="submit" id="submitBtn" class="w-full bg-[#111827] hover:bg-[#FFC51A] hover:text-[#111827] text-white font-black py-4 rounded-2xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-slate-200">
+                    <i data-lucide="send" class="w-5 h-5"></i> Publish to Database
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        lucide.createIcons();
+        const quillDesc = new Quill('#descEditor', { theme: 'snow' });
+        const quillLinks = new Quill('#linksEditor', { theme: 'snow' });
+
+        document.getElementById('adminForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.innerHTML = 'Publishing...';
+
+            const payload = {
+                projectName: e.target.projectName.value,
+                featureTitle: e.target.featureTitle.value,
+                description: quillDesc.root.innerHTML,
+                links: quillLinks.root.innerHTML,
+                note: e.target.note.value,
+                secret: e.target.secret.value
+            };
+
+            try {
+                const res = await fetch('/api/add-project', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (res.ok) {
+                    alert('🚀 Success! Card added to the Source of Truth.');
+                    e.target.reset();
+                    quillDesc.setContents([]);
+                    quillLinks.setContents([]);
+                } else {
+                    alert('❌ Failed: Check Secret Phrase');
+                }
+            } catch (err) {
+                alert('Connection Error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i data-lucide="send" class="w-5 h-5"></i> Publish to Database';
+                lucide.createIcons();
+            }
+        };
+    </script>
+</body>
+</html>
