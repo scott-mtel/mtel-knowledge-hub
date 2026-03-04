@@ -18,7 +18,7 @@
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
             <div>
                 <h1 class="text-3xl font-black tracking-tight text-[#111827]">
-                    Project <span class="text-[#FFC51A]">Knowledge Hub</span>
+                    Mtel <span class="text-[#FFC51A]">Design Hub</span>
                 </h1>
                 <p class="text-slate-500 text-sm mt-1">Live project documentation and handover assets.</p>
             </div>
@@ -86,32 +86,39 @@
                     : '---';
 
                 return `
-                    <tr onclick="openModal('${p._id}')" class="group hover:bg-slate-50/80 cursor-pointer transition-colors">
-                        <td class="px-6 py-4">
-                            <span class="text-[10px] font-black uppercase tracking-widest bg-[#FFC51A]/10 text-[#111827] px-2 py-1 rounded-md border border-[#FFC51A]/20">
-                                ${p.projectName}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4">
-                            <div class="text-sm font-bold text-[#111827] group-hover:text-[#FFC51A] transition-colors">
-                                ${p.featureTitle}
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 hidden md:table-cell">
-                            <div class="text-xs text-slate-500 line-clamp-1 max-w-md">
-                                ${p.description.replace(/<[^>]*>/g, '')}
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 hidden sm:table-cell">
-                            <span class="text-xs font-medium text-slate-400">${dateAdded}</span>
-                        </td>
-                        <td class="px-6 py-4 text-right">
-                            <button class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-400 group-hover:bg-[#FFC51A] group-hover:text-[#111827] transition-all">
-                                <i data-lucide="maximize-2" class="w-4 h-4"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `;
+                        <tr onclick="openModal('${p._id}')" class="group hover:bg-slate-50/80 cursor-pointer transition-colors border-b border-slate-50">
+                            <td class="px-6 py-4">
+                                <div class="w-max">
+                                    <span class="text-[10px] font-black uppercase tracking-widest bg-[#FFC51A]/10 text-[#111827] px-2.5 py-1 rounded-md border border-[#FFC51A]/20 whitespace-nowrap">
+                                        ${p.projectName}
+                                    </span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-sm font-bold text-[#111827] group-hover:text-[#FFC51A] transition-colors">
+                                    ${p.featureTitle}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 hidden md:table-cell">
+                                <div class="text-xs text-slate-500 line-clamp-1 max-w-[250px]">
+                                    ${p.description.replace(/<[^>]*>/g, '')}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 hidden sm:table-cell">
+                                <span class="text-xs font-medium text-slate-400">${dateAdded}</span>
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                <div class="flex items-center justify-end gap-2">
+                                    <button onclick="copyProjectLink(event, '${p._id}')" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-100 text-slate-400 hover:bg-[#FFC51A] hover:text-[#111827] transition-all">
+                                        <i data-lucide="link" class="w-4 h-4"></i>
+                                    </button>
+                                    <div class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-100 text-slate-400 group-hover:bg-[#FFC51A] group-hover:text-[#111827] transition-all">
+                                        <i data-lucide="maximize-2" class="w-4 h-4"></i>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
             }).join('');
             lucide.createIcons();
         }
@@ -164,6 +171,37 @@
         function closeModal() {
             document.getElementById('projectModal').classList.add('hidden');
             document.body.style.overflow = 'auto';
+        }
+
+        // 1. Function to copy the unique link
+        function copyProjectLink(event, id) {
+            event.stopPropagation(); // Prevents the row's click event from firing
+            
+            const url = new URL(window.location.href);
+            url.searchParams.set('id', id); // Adds ?id=... to the URL
+            
+            navigator.clipboard.writeText(url.toString()).then(() => {
+                alert("Link copied to clipboard! You can now share this specific task.");
+            });
+        }
+
+        // 2. Updated init() function to handle shared links
+        async function fetchProjects() {
+            try {
+                const response = await fetch('/api/get-projects');
+                allProjects = await response.json();
+                renderTable(allProjects);
+                document.getElementById('loadingState').classList.add('hidden');
+
+                // CHECK IF A LINK WAS SHARED:
+                const urlParams = new URLSearchParams(window.location.search);
+                const sharedId = urlParams.get('id');
+                if (sharedId) {
+                    openModal(sharedId);
+                }
+            } catch (err) {
+                console.error(err);
+            }
         }
 
         // Search Listener
