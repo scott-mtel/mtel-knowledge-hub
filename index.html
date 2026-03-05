@@ -47,18 +47,23 @@
                     <p class="text-slate-500 text-sm mt-1">Live project documentation and handover assets.</p>
                 </div>
 
-                <div class="flex items-center gap-3">
-                    <a href="admin.html" class="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all">
-                        <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                <div class="flex items-center gap-2">
+                    <a href="admin.html" class="flex items-center gap-2 px-4 py-2 bg-[#FFC51A] hover:bg-[#e6b117] text-[#111827] rounded-xl text-xs font-bold transition-all shadow-sm">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
                         Add Record
                     </a>
 
-                    <div id="userProfile" class="flex items-center gap-3 pl-3 border-l border-slate-200">
+                    <a href="manage.html" class="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-bold transition-all shadow-sm">
+                        <i data-lucide="settings-2" class="w-4 h-4 text-slate-400"></i>
+                        Manage
+                    </a>
+
+                    <div id="userProfile" class="flex items-center gap-3 pl-3 ml-1 border-l border-slate-200">
                         <div class="text-right hidden sm:block">
                             <p id="userName" class="text-[10px] font-black text-slate-900 leading-none mb-1 uppercase tracking-tighter">Guest</p>
                             <button onclick="logout()" class="text-[9px] font-bold text-rose-500 hover:text-rose-600 transition-colors uppercase tracking-widest">Logout</button>
                         </div>
-                        <img id="userAvatar" src="" class="w-10 h-10 rounded-full border-2 border-white shadow-sm bg-slate-200">
+                        <img id="userAvatar" src="" class="w-9 h-9 rounded-full border border-slate-200 shadow-sm bg-slate-100">
                     </div>
                 </div>
             </div>
