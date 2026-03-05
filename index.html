@@ -38,18 +38,35 @@
     <script src="https://accounts.google.com/gsi/client" async defer></script>
 
     <main class="max-w-6xl mx-auto px-4 py-12">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
-            <div>
-                <h1 class="text-3xl font-black tracking-tight text-[#111827]">
-                    Mtel <span class="text-[#FFC51A]">Design Hub</span>
-                </h1>
-                <p class="text-slate-500 text-sm mt-1">Live project documentation and handover assets.</p>
+        <div class="flex flex-col gap-6 mb-10">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h1 class="text-3xl font-black tracking-tight text-[#111827]">
+                        Mtel <span class="text-[#FFC51A]">Design Hub</span>
+                    </h1>
+                    <p class="text-slate-500 text-sm mt-1">Live project documentation and handover assets.</p>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <a href="admin.html" class="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all">
+                        <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                        Add Record
+                    </a>
+
+                    <div id="userProfile" class="flex items-center gap-3 pl-3 border-l border-slate-200">
+                        <div class="text-right hidden sm:block">
+                            <p id="userName" class="text-[10px] font-black text-slate-900 leading-none mb-1 uppercase tracking-tighter">Guest</p>
+                            <button onclick="logout()" class="text-[9px] font-bold text-rose-500 hover:text-rose-600 transition-colors uppercase tracking-widest">Logout</button>
+                        </div>
+                        <img id="userAvatar" src="" class="w-10 h-10 rounded-full border-2 border-white shadow-sm bg-slate-200">
+                    </div>
+                </div>
             </div>
-            
+
             <div class="relative group">
                 <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-[#FFC51A] transition-colors"></i>
                 <input type="text" id="searchInput" placeholder="Search features or projects..." 
-                    class="pl-12 pr-6 py-3 bg-white border-2 border-slate-100 rounded-2xl w-full md:w-80 outline-none focus:border-[#FFC51A] transition-all shadow-sm">
+                    class="pl-12 pr-6 py-3 bg-white border-2 border-slate-100 rounded-2xl w-full outline-none focus:border-[#FFC51A] transition-all shadow-sm">
             </div>
         </div>
 
@@ -85,23 +102,34 @@
     </div>
 
     <script>
+        function updateUIWithUser(userData) {
+            if (!userData) return;
+            document.getElementById('userName').innerText = userData.name;
+            document.getElementById('userAvatar').src = userData.picture;
+        }
+
         function handleCredentialResponse(response) {
-            // Decode the JWT (Google sends user info in a encoded string)
             const responsePayload = parseJwt(response.credential);
-            
-            const email = responsePayload.email;
-            const domain = email.split('@')[1];
+            const domain = responsePayload.email.split('@')[1];
 
             if (domain === 'mtel.co.th') {
-                // Success! Save session and hide overlay
                 sessionStorage.setItem('mtel_user', JSON.stringify(responsePayload));
                 document.getElementById('loginOverlay').classList.add('hidden');
-                fetchProjects(); // Now load the data
+                
+                // Update the header with user info
+                updateUIWithUser(responsePayload);
+                
+                fetchProjects(); 
             } else {
-                // Fail! Show error
                 document.getElementById('errorMsg').classList.remove('hidden');
             }
         }
+
+        function logout() {
+            sessionStorage.removeItem('mtel_user');
+            location.reload();
+        }
+        
 
         // Helper to decode Google's token
         function parseJwt(token) {
@@ -115,9 +143,16 @@
 
         // Check if user is already logged in on page load
         window.addEventListener('load', () => {
-            const user = sessionStorage.getItem('mtel_user');
-            if (user) {
+            //const user = sessionStorage.getItem('mtel_user');
+            //if (user) {
+                //document.getElementById('loginOverlay').classList.add('hidden');
+                //fetchProjects();
+            //}
+            const userStr = sessionStorage.getItem('mtel_user');
+            if (userStr) {
+                const userData = JSON.parse(userStr);
                 document.getElementById('loginOverlay').classList.add('hidden');
+                updateUIWithUser(userData); // Set the header profile
                 fetchProjects();
             }
         });
