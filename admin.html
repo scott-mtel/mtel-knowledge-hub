@@ -93,9 +93,15 @@
                 projectName: document.getElementById('projectName').value,
                 featureTitle: document.getElementById('featureTitle').value,
                 description: quillDesc.root.innerHTML,
-                links: quillLinks.root.innerHTML,
-                createdAt: new Date().toISOString()
+                links: quillLinks.root.innerHTML
             };
+
+            // Only add createdAt if it's a NEW record
+            if (!editId) {
+                payload.createdAt = new Date().toISOString();
+            } else {
+                payload.updatedAt = new Date().toISOString(); // Optional: track edits
+            }
 
             const url = editId ? '/api/update-project' : '/api/add-project';
             const method = editId ? 'PUT' : 'POST';
@@ -103,7 +109,10 @@
 
             const res = await fetch(url, {
                 method: method,
-                headers: { 'Content-Type': 'application/json', 'x-admin-secret': secret },
+                headers: { 
+                    'Content-Type': 'application/json', 
+                    'x-admin-secret': secret 
+                },
                 body: JSON.stringify(body)
             });
 

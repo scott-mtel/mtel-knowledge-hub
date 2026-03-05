@@ -3,9 +3,12 @@ import { MongoClient } from 'mongodb';
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).send('Use POST');
 
-  // Security Check
-  if (req.body.secret !== process.env.ADMIN_SECRET) {
-    return res.status(401).json({ error: 'Wrong Secret' });
+  // ✅ FIX: Look for the header, not the body
+  const incomingSecret = req.headers['x-admin-secret']; 
+  const serverSecret = process.env.ADMIN_SECRET;
+
+  if (incomingSecret !== serverSecret) {
+    return res.status(401).json({ error: 'Auth failed. Check Secret.' });
   }
 
   const client = new MongoClient(process.env.MONGODB_URI);
@@ -14,12 +17,13 @@ export default async function handler(req, res) {
     await client.connect();
     const db = client.db('Handover');
     
+    // We remove 'secret' from here because it's in the headers now
     const projectData = {
       projectName: req.body.projectName,
       featureTitle: req.body.featureTitle,
       description: req.body.description,
       links: req.body.links,
-      note: req.body.note,
+      note: req.body.note, // Added this back in case you use internal notes
       createdAt: new Date()
     };
 

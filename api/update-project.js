@@ -12,6 +12,8 @@ export default async function handler(req, res) {
     await client.connect();
     const db = client.db('Handover');
     const { id, ...updateData } = req.body;
+    // Safety: MongoDB doesn't like _id being in the $set object
+    delete updateData._id;
 
     await db.collection('Projects').updateOne(
       { _id: new ObjectId(id) },
