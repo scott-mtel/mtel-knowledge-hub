@@ -13,9 +13,10 @@ export default async function handler(req, res) {
   try {
     await client.connect();
     const db = client.db('Handover');
-    const { id } = req.query;
+    const { id } = req.query; // Because you sent it as ?id=...
+    await db.collection('Projects').deleteOne({ _id: new ObjectId(id) });
 
-    const result = await db.collection('Projects').deleteOne({ _id: new ObjectId(id) });
+    //const result = await db.collection('Projects').deleteOne({ _id: new ObjectId(id) });
 
     if (result.deletedCount === 1) {
       res.status(200).json({ message: 'Deleted successfully' });

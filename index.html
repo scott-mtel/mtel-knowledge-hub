@@ -15,6 +15,28 @@
 </head>
 <body class="bg-slate-50 min-h-screen font-sans antialiased text-slate-900">
 
+    <div id="loginOverlay" class="fixed inset-0 z-[200] bg-[#111827] flex items-center justify-center p-4">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl max-w-sm w-full text-center">
+            <div class="mb-6">
+                <h1 class="text-2xl font-black text-[#111827]">Mtel <span class="text-[#FFC51A]">Hub</span></h1>
+                <p class="text-slate-500 text-sm mt-2">Please sign in with your corporate account to access the knowledge base.</p>
+            </div>
+            
+            <div id="g_id_onload"
+                data-client_id="YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com"
+                data-context="signin"
+                data-ux_mode="popup"
+                data-callback="handleCredentialResponse"
+                data-auto_prompt="false">
+            </div>
+            <div class="g_id_signin flex justify-center" data-type="standard"></div>
+            
+            <p id="errorMsg" class="mt-4 text-rose-500 text-xs font-bold hidden uppercase tracking-widest">Access Denied: Use @mtel.co.th email</p>
+        </div>
+    </div>
+
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+
     <main class="max-w-6xl mx-auto px-4 py-12">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
             <div>
@@ -63,6 +85,44 @@
     </div>
 
     <script>
+        function handleCredentialResponse(response) {
+            // Decode the JWT (Google sends user info in a encoded string)
+            const responsePayload = parseJwt(response.credential);
+            
+            const email = responsePayload.email;
+            const domain = email.split('@')[1];
+
+            if (domain === 'mtel.co.th') {
+                // Success! Save session and hide overlay
+                sessionStorage.setItem('mtel_user', JSON.stringify(responsePayload));
+                document.getElementById('loginOverlay').classList.add('hidden');
+                fetchProjects(); // Now load the data
+            } else {
+                // Fail! Show error
+                document.getElementById('errorMsg').classList.remove('hidden');
+            }
+        }
+
+        // Helper to decode Google's token
+        function parseJwt(token) {
+            var base64Url = token.split('.')[1];
+            var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+            return JSON.parse(jsonPayload);
+        }
+
+        // Check if user is already logged in on page load
+        window.addEventListener('load', () => {
+            const user = sessionStorage.getItem('mtel_user');
+            if (user) {
+                document.getElementById('loginOverlay').classList.add('hidden');
+                fetchProjects();
+            }
+        });
+
+
         let allProjects = [];
 
         // Fetch data from your new API

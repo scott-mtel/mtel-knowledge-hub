@@ -6,8 +6,24 @@
     <title>Manage Records | Mtel Hub</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .loading-pulse {
+            animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+    </style>
 </head>
 <body class="bg-slate-50 min-h-screen">
+
+    <div id="adminAuthOverlay" class="fixed inset-0 z-[200] bg-slate-900 flex items-center justify-center hidden">
+        <div class="text-center text-white">
+            <div class="animate-spin w-8 h-8 border-4 border-[#FFC51A] border-t-transparent rounded-full mx-auto mb-4"></div>
+            <p class="font-bold tracking-widest uppercase text-xs">Verifying Mtel Access...</p>
+        </div>
+    </div>
 
     <div class="max-w-4xl mx-auto px-4 py-12">
         <div class="flex flex-col md:flex-row justify-between items-center gap-6 mb-10">
@@ -59,6 +75,40 @@
     </div>
 
     <script>
+
+        function checkMtelAuth() {
+                const user = sessionStorage.getItem('mtel_user');
+                const overlay = document.getElementById('adminAuthOverlay');
+
+                if (!user) {
+                    // If no user session, show overlay and redirect to home
+                    overlay.classList.remove('hidden');
+                    window.location.href = 'index.html';
+                    return false;
+                }
+
+                const userData = JSON.parse(user);
+                if (userData.email.split('@')[1] !== 'mtel.co.th') {
+                    alert("Unauthorized Domain");
+                    window.location.href = 'index.html';
+                    return false;
+                }
+                return true;
+            }
+
+            // Run this immediately on load
+            window.addEventListener('load', () => {
+                if (checkMtelAuth()) {
+                    // Only if authorized, we run the existing logic (like fetchManageData)
+                    if (typeof fetchManageData === "function") fetchManageData();
+                    // and handle the secret auto-fill
+                    const savedSecret = localStorage.getItem('mtel_admin_secret');
+                    if (savedSecret && document.getElementById('adminSecret')) {
+                        document.getElementById('adminSecret').value = savedSecret;
+                    }
+                }
+        });
+
         let allProjects = [];
         let projectToDelete = null;
 
@@ -115,6 +165,13 @@
         // 4. Delete Logic
         function openDeleteModal(id) {
             projectToDelete = id;
+            
+            // Auto-fill secret if it exists in storage
+            const savedSecret = localStorage.getItem('mtel_admin_secret');
+            if (savedSecret) {
+                document.getElementById('deleteSecret').value = savedSecret;
+            }
+            
             document.getElementById('deleteModal').classList.remove('hidden');
         }
 
@@ -126,19 +183,39 @@
 
         document.getElementById('confirmDeleteBtn').onclick = async () => {
             const secret = document.getElementById('deleteSecret').value;
+            const btn = document.getElementById('confirmDeleteBtn');
+            
             if(!secret) return alert("Secret required");
 
-            const res = await fetch(`/api/delete-project?id=${projectToDelete}`, {
-                method: 'DELETE',
-                headers: { 'x-admin-secret': secret }
-            });
+            // START LOADING STATE
+            btn.disabled = true;
+            const originalText = btn.innerText;
+            btn.innerText = "Deleting...";
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
 
-            if(res.ok) {
-                localStorage.removeItem('mtel_cache'); // Force fresh fetch on next visit
-                closeDeleteModal();
-                fetchManageData();
-            } else {
-                alert("Incorrect secret phrase.");
+            try {
+                const res = await fetch(`/api/delete-project?id=${projectToDelete}`, {
+                    method: 'DELETE',
+                    headers: { 'x-admin-secret': secret }
+                });
+
+                if(res.ok) {
+                    // ✅ SUCCESS: Save secret to localStorage for next time
+                    localStorage.setItem('mtel_admin_secret', secret);
+                    
+                    localStorage.removeItem('mtel_cache'); 
+                    closeDeleteModal();
+                    fetchManageData();
+                } else {
+                    alert("Incorrect secret phrase.");
+                }
+            } catch (err) {
+                alert("Network error. Could not delete.");
+            } finally {
+                // STOP LOADING STATE
+                btn.disabled = false;
+                btn.innerText = originalText;
+                btn.classList.remove('opacity-50', 'cursor-not-allowed');
             }
         };
 
